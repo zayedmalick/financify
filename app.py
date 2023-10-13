@@ -125,57 +125,32 @@ def check_budget_details(category, period):
         "budget_period": budget_period,
         "budget_duration": budget_duration
     }
+
 def display_budget_overview():
     st.subheader("Budget Overview")
     budget_categories = ["Rent", "Groceries", "Utilities", "Transportation", "Entertainment", "Healthcare", "Education", "Other"]
-    for category in budget_categories:
-        st.header(category)  # Display the category as a header
+    
+    category_selection = st.radio("Select a Budget Category to View Details", budget_categories)
+    
+    if category_selection:
+        st.subheader(category_selection)  # Display the selected category as a header
 
-        st.subheader("Monthly Budget")
-        budget_info_monthly = check_budget_details(category, "Monthly")
+        st.write("**Monthly Budget**")
+        budget_info_monthly = check_budget_details(category_selection, "Monthly")
         if budget_info_monthly['remaining_budget'] is not None:
             st.write(f"- Status: {budget_info_monthly['status']}")
             st.write(f"- Remaining Budget: ₹{budget_info_monthly['remaining_budget']:.2f}")
             st.write(f"- Budget Period: {budget_info_monthly['budget_period']}")
             st.write(f"- Budget Duration: {budget_info_monthly['budget_duration']}")
 
-        st.subheader("Weekly Budget")
-        budget_info_weekly = check_budget_details(category, "Weekly")
+        st.write("**Weekly Budget**")
+        budget_info_weekly = check_budget_details(category_selection, "Weekly")
         if budget_info_weekly['remaining_budget'] is not None:
             st.write(f"- Status: {budget_info_weekly['status']}")
             st.write(f"- Remaining Budget: ₹{budget_info_weekly['remaining_budget']:.2f}")
             st.write(f"- Budget Period: {budget_info_weekly['budget_period']}")
             st.write(f"- Budget Duration: {budget_info_weekly['budget_duration']}")
 
-def send_budget_email_notifications():
-    st.subheader("Send Budget Email Notifications")
-    receiver_email = st.text_input("Recipient's Email")
-    if st.button("Send Budget Email Notifications"):
-        if receiver_email:
-            budget_categories = ["Rent", "Groceries", "Utilities", "Transportation", "Entertainment", "Healthcare", "Education", "Other"]
-            email_subject = "Budget Status Notification"
-            email_message = ""
-
-            for category in budget_categories:
-                monthly_budget_info = check_budget_details(category, "Monthly")
-                weekly_budget_info = check_budget_details(category, "Weekly")
-
-                if monthly_budget_info['remaining_budget'] is not None:
-                    email_message += f"Category: {category}\n\n"
-                    email_message += "Monthly Budget:\n"
-                    email_message += f"- Status: {monthly_budget_info['status']}\n"
-                    email_message += f"- Remaining Budget: ₹{monthly_budget_info['remaining_budget']:.2f}\n"
-                    email_message += f"- Budget Period: {monthly_budget_info['budget_period']}\n"
-                    email_message += f"- Budget Duration: {monthly_budget_info['budget_duration']}\n\n"
-
-                if weekly_budget_info['remaining_budget'] is not None:
-                    email_message += "Weekly Budget:\n"
-                    email_message += f"- Status: {weekly_budget_info['status']}\n"
-                    email_message += f"- Remaining Budget: ₹{weekly_budget_info['remaining_budget']:.2f}\n"
-                    email_message += f"- Budget Period: {weekly_budget_info['budget_period']}\n"
-                    email_message += f"- Budget Duration: {weekly_budget_info['budget_duration']}\n\n"
-
-            send_email(receiver_email, email_subject, email_message)
 
 with st.container():
     st.header("Financify")
@@ -206,6 +181,38 @@ with st.expander("Expense", expanded=False):
     if st.button("Add Expense"):
         insert_data(category, "Expense", amount)
         st.success(f"Expense of ₹{amount:.2f} added for {category}")
+
+st.sidebar.title("Settings")
+with st.sidebar:
+    st.subheader("Send Budget Email Notifications")
+    receiver_email = st.text_input("Recipient's Email")
+    if st.button("Send Budget Email Notifications"):
+        if receiver_email:
+            budget_categories = ["Rent", "Groceries", "Utilities", "Transportation", "Entertainment", "Healthcare", "Education", "Other"]
+            email_subject = "Budget Status Notification"
+            email_message = ""
+
+            for category in budget_categories:
+                monthly_budget_info = check_budget_details(category, "Monthly")
+                weekly_budget_info = check_budget_details(category, "Weekly")
+
+                if monthly_budget_info['remaining_budget'] is not None:
+                    email_message += f"Category: {category}\n\n"
+                    email_message += "Monthly Budget:\n"
+                    email_message += f"- Status: {monthly_budget_info['status']}\n"
+                    email_message += f"- Remaining Budget: ₹{monthly_budget_info['remaining_budget']:.2f}\n"
+                    email_message += f"- Budget Period: {monthly_budget_info['budget_period']}\n"
+                    email_message += f"- Budget Duration: {monthly_budget_info['budget_duration']}\n\n"
+
+                if weekly_budget_info['remaining_budget'] is not None:
+                    email_message += "Weekly Budget:\n"
+                    email_message += f"- Status: {weekly_budget_info['status']}\n"
+                    email_message += f"- Remaining Budget: ₹{weekly_budget_info['remaining_budget']:.2f}\n"
+                    email_message += f"- Budget Period: {weekly_budget_info['budget_period']}\n"
+                    email_message += f"- Budget Duration: {weekly_budget_info['budget_duration']}\n\n"
+
+            send_email(receiver_email, email_subject, email_message)
+
 
 with st.expander("Set Budget", expanded=False):
     st.subheader("Set Budget")
@@ -240,11 +247,15 @@ with st.expander("Reports", expanded=False):
     transactions_df = fetch_transactions()
 
     # Line chart
-    line_chart = px.line(transactions_df, x='Date', y='Amount', color='Category', title='Income and Expenses Over Time')
+    line_chart = px.line(transactions_df, x='Date', y='Amount', color='Category', title='Expenses Over Time')
     st.plotly_chart(line_chart)
 
+    # Bar chart
+    bar_chart = px.bar(transactions_df, x='Category', y='Amount', color='Type', title='Expenses Bar Chart')
+    st.plotly_chart(bar_chart)
+
     # Scatter plot
-    scatter_plot = px.scatter(transactions_df, x='Date', y='Amount', color='Category', title='Income and Expenses Scatter Plot')
+    scatter_plot = px.scatter(transactions_df, x='Date', y='Amount', color='Category', title='Expenses Scatter Plot')
     st.plotly_chart(scatter_plot)
 
     # Table report for both income and expenses
@@ -258,6 +269,11 @@ with st.expander("Reports", expanded=False):
 
     st.write("---")
 
-st.sidebar.title("Settings")
-with st.sidebar:
-    send_budget_email_notifications()
+    email_report_button = st.button("Send Reports to Email")
+    if email_report_button:
+        attachment_path = "reports.csv"
+        transactions_df.to_csv(attachment_path, index=False)
+        subject = "Financial Report"
+        message = "Here is your financial report."
+        send_email(receiver_email, subject, message, attachment_path)
+
